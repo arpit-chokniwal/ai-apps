@@ -36,7 +36,7 @@ def emails(status: EmailStatus, filter: str, inbox):
         print(e)
 
 
-def get_email_body(email_id, inbox):
+def get_email_details(email_id, inbox):
     try:
         data = inbox.fetch(str(email_id).encode('ascii'), '(RFC822)')[1]
         email_message = email.message_from_bytes(data[0][1])
@@ -50,7 +50,9 @@ def get_email_body(email_id, inbox):
         'to': [],
         'cc': [],
         'from': None,
-        'subject': email_message['subject']
+        'subject': email_message['subject'],
+        'body': None,
+        'attachments': []
     }
 
     for header in ['to', 'cc', 'from']:
@@ -69,12 +71,17 @@ def get_email_body(email_id, inbox):
         try:
             if content_type == "text/plain":
                 email_data['body'] = part.get_payload(decode=True).decode().replace("\n", " ").replace("\r", "")
-            elif (part.get_content_maintype() != 'multipart' and 
+            
+            if (part.get_content_maintype() != 'multipart' and 
                   part.get('Content-Disposition') and 
                   part.get_filename() and 
                   part.get_filename().lower().endswith(('.pdf', '.txt', '.docx'))):
                 file_data = part.get_payload(decode=True)
-                print(file_data)
+                email_data['attachments'].append({
+                    'filename': part.get_filename(),
+                    'content_type': content_type,
+                    'data': file_data
+                })
         except Exception as e:
             print(f"Error processing {content_type} at position {email_id}: {e}")
 
@@ -83,11 +90,12 @@ def get_email_body(email_id, inbox):
 if __name__ == "__main__":
     inbox = get_inbox()
     date = datetime.date.today().strftime("%d-%b-%Y")
-    all_emails = emails(EmailStatus.ALL, f'(SENTSINCE {date})', inbox)
-    print(all_emails)
-    for email_id in all_emails:
-        email_body = get_email_body(email_id, inbox)
-        print(email_body, "\n\n")
+    daily_emails = emails(EmailStatus.ALL, f'(SENTSINCE {date})', inbox)
+    data = []
+    for email_id in daily_emails:
+        email_details = get_email_details(email_id, inbox)
+        data.append(email_details)
+    print(data[3])
 
         
 
