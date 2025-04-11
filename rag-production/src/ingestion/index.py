@@ -1,5 +1,4 @@
 from llama_index.core import SimpleDirectoryReader
-from dotenv import load_dotenv
 from llama_index.core.extractors import TitleExtractor, QuestionsAnsweredExtractor
 
 from llama_index.core.node_parser import SentenceSplitter
@@ -12,10 +11,6 @@ from llama_index.core import StorageContext
 from utils import file_extractor
 from configure_models import get_hf_embedding_model, get_gemini_llm
 from vector_database import get_vector_store
-
-
-load_dotenv()
-
 
 def read_docs(path="src/ingestion/docs"):
     try:
@@ -87,10 +82,10 @@ def indexing_process(embed_model, llm, path="src/ingestion/docs", collection_nam
 
 
 # Ignore this it is for testing the RAG 
-# def ask_rag(query, collection_name="anthropic_doc", db_path="chroma-db", embed_model=get_hf_embedding_model()):
+# def ask_rag(query, collection_name="anthropic_doc", db_path="chroma-db", embed_model=get_hf_embedding_model(), llm=get_gemini_llm()):
 #     vector_store = get_vector_store(db_path, collection_name)
 #     index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed_model)
-#     response = index.as_query_engine().query(query)
+#     response = index.as_query_engine(similarity_top_k=7, llm=llm).query(query)
 #     print("\nResponse: \n", response, "\n\n")
 #     return response
 
