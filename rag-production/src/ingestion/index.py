@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 
-doc_reader = SimpleDirectoryReader(input_dir="docs", file_extractor=file_extractor)
+doc_reader = SimpleDirectoryReader(input_dir="src/ingestion/docs", file_extractor=file_extractor)
 docs = doc_reader.load_data()
 
 
@@ -30,6 +30,7 @@ Note: use these extractors to generate metadata for the docs based on your use c
 """
 
 from llama_index.llms.google_genai import GoogleGenAI
+
 
 llm = GoogleGenAI(
     model="gemini-2.0-flash",
@@ -82,7 +83,7 @@ from llama_index.core import StorageContext
 
 
 # initialize client, setting path to save data
-db = chromadb.PersistentClient(path="./chroma_db")
+db = chromadb.PersistentClient(path="chroma_db")
 
 # create collection
 chroma_collection = db.get_or_create_collection("anthropic_doc")

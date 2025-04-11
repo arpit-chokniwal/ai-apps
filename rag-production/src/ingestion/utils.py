@@ -7,7 +7,7 @@ file_extractor = {
     ".jpg": ImageReader(parse_text=True), # optional field keep_image=True this will return the image in the document as base64 encoded string
     ".png": ImageReader(parse_text=True),
     ".jpeg": ImageReader(parse_text=True),
-    ".mp3": VideoAudioReader(), # you can pass openai whisper model `model_version` to this
+    ".mp3": VideoAudioReader(), # you can pass Openai whisper model `model_version` to this
     ".mp4": VideoAudioReader(),
     ".csv": PandasCSVReader(),
     ".epub": EpubReader(),
