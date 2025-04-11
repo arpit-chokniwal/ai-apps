@@ -121,7 +121,7 @@ def index_and_store_nodes(vector_store, nodes):
         raise
 
 
-def start_indexing_and_storing_docs(path="src/ingestion/docs", collection_name="anthropic_doc", db_path="chroma-db"):
+def indexing_process(path="src/ingestion/docs", collection_name="anthropic_doc", db_path="chroma-db"):
     print("Starting document indexing process")
     documents = read_docs(path)
     nodes = transform_docs(documents)
@@ -132,4 +132,4 @@ def start_indexing_and_storing_docs(path="src/ingestion/docs", collection_name="
 
 
 if __name__ == "__main__":
-    start_indexing_and_storing_docs()
+    indexing_process()
