@@ -1,14 +1,7 @@
+import os
 from llama_index.core import SimpleDirectoryReader
 from dotenv import load_dotenv
 from utils import file_extractor
-import os
-
-load_dotenv()
-
-doc_reader = SimpleDirectoryReader(input_dir="src/ingestion/docs", file_extractor=file_extractor)
-docs = doc_reader.load_data()
-
-
 from llama_index.core.extractors import (
     TitleExtractor,
     QuestionsAnsweredExtractor,
@@ -29,8 +22,27 @@ This will help us to improve the quality of the index.
 Note: use these extractors to generate metadata for the docs based on your use case :), i am using title and questions for now
 """
 
+
+from llama_index.core.node_parser import SentenceSplitter
+"""
+SentenceSplitter is a text parsing tool that splits text into chunks while trying to preserve complete sentences and paragraphs together, avoiding partial sentences at chunk boundaries.
+"""
+
+from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.schema import MetadataMode
 from llama_index.llms.google_genai import GoogleGenAI
 
+# Store the embeddings in a vector database
+import chromadb
+from llama_index.core import VectorStoreIndex
+from llama_index.vector_stores.chroma import ChromaVectorStore
+from llama_index.core import StorageContext
+
+
+load_dotenv()
+
+if not os.getenv("GOOGLE_API_KEY"):
+    raise ValueError("GOOGLE_API_KEY environment variable is not set")
 
 llm = GoogleGenAI(
     model="gemini-2.0-flash",
@@ -40,58 +52,84 @@ llm = GoogleGenAI(
 This LLM will be used to generate the metadata.
 You can use any other LLM that you want.
 
-Note: This LLM has no relation with genration of embeddings.
+Note: This LLM has no relation with generation of embeddings.
 """
-
-
-from llama_index.core.node_parser import SentenceSplitter
-"""
-SentenceSplitter is a text parsing tool that splits text into chunks while trying to preserve complete sentences and paragraphs together, avoiding partial sentences at chunk boundaries.
-"""
-
-
-from llama_index.core.ingestion import IngestionPipeline
-
-pipeline = IngestionPipeline(transformations=[SentenceSplitter(), TitleExtractor(llm=llm), QuestionsAnsweredExtractor(llm=llm)])
-
-
-nodes = pipeline.run(
-    documents=docs,
-    in_place=True,
-    show_progress=True,
-)
-""" 
-in_place determines whether the transformations create a new list for transformed nodes (in_place=False) or modify the existing array of nodes directly (in_place=True). It defaults to True to modify nodes in place.
-"""
-
-from llama_index.core.schema import MetadataMode
-
-print("\n\nEMBED", nodes[6].get_content(metadata_mode=MetadataMode.EMBED), "\n\n")
-print("\n\nLLM", nodes[6].get_content(metadata_mode=MetadataMode.LLM), "\n\n")
-
-
 
 # Create a new embedding model
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 hf_embeddings = HuggingFaceEmbedding(model_name="BAAI/bge-large-en-v1.5")
 
-# Store the embeddings in a vector database
-import chromadb
-from llama_index.core import VectorStoreIndex
-from llama_index.vector_stores.chroma import ChromaVectorStore
-from llama_index.core import StorageContext
+
+def read_docs(path="src/ingestion/docs"):
+    try:
+        doc_reader = SimpleDirectoryReader(input_dir=path, file_extractor=file_extractor)
+        docs = doc_reader.load_data()
+        print(f"Loaded {len(docs)} documents")
+        return docs
+    except Exception as e:
+        print(f"Error reading documents: {e}")
+        raise
 
 
-# initialize client, setting path to save data
-db = chromadb.PersistentClient(path="chroma_db")
+def transform_docs(documents):
+    try:
+        metadata_extractors = [
+            TitleExtractor(llm=llm), 
+            QuestionsAnsweredExtractor(llm=llm)
+        ]
 
-# create collection
-chroma_collection = db.get_or_create_collection("anthropic_doc")
+        pipeline = IngestionPipeline(transformations=[
+            SentenceSplitter(chunk_overlap=120),
+            *metadata_extractors
+        ])
+        
+        nodes = pipeline.run(
+            documents=documents,
+            show_progress=True,
+        )
+        
+        print(f"Transformed documents into {len(nodes)} nodes")
+        return nodes
+    except Exception as e:
+        print(f"Error transforming documents: {e}")
+        raise
 
-# assign chroma as the vector_store to the context
-vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
-storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
-# Store the embeddings in a vector database
-index = VectorStoreIndex(nodes, storage_context=storage_context, embed_model=hf_embeddings)
+def get_vector_store(db_path, collection_name):
+    try:
+        db = chromadb.PersistentClient(path=db_path)
 
+        chroma_collection = db.get_or_create_collection(collection_name)
+        vector_store = ChromaVectorStore(chroma_collection=chroma_collection)
+        
+        print(f"Connected to vector store collection: {collection_name}")
+        return vector_store
+    except Exception as e:
+        print(f"Error connecting to vector store: {e}")
+        raise
+
+
+def index_and_store_nodes(vector_store, nodes):
+    try:
+        # assign chroma as the vector_store to the context
+        storage_context = StorageContext.from_defaults(vector_store=vector_store)
+        stored_index = VectorStoreIndex(nodes, storage_context=storage_context, embed_model=hf_embeddings)
+        print("Successfully indexed and stored nodes")
+        return stored_index
+    except Exception as e:
+        print(f"Error indexing and storing nodes: {e}")
+        raise
+
+
+def start_indexing_and_storing_docs(path="src/ingestion/docs", collection_name="anthropic_doc", db_path="chroma-db"):
+    print("Starting document indexing process")
+    documents = read_docs(path)
+    nodes = transform_docs(documents)
+    vector_store = get_vector_store(db_path, collection_name)
+    index = index_and_store_nodes(vector_store, nodes)
+    print("Document indexing process completed successfully")
+    return index
+
+
+if __name__ == "__main__":
+    start_indexing_and_storing_docs()
