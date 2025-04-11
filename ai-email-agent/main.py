@@ -1,6 +1,5 @@
-import imaplib
+import imaplib, os, datetime
 from dotenv import load_dotenv
-import os
 from enum import Enum
 
 class EmailStatus(Enum):
@@ -23,10 +22,9 @@ def get_inbox():
     except Exception as e:
         print(e)
 
-def emails(status: EmailStatus, inbox):
+def emails(status: EmailStatus, filter: str, inbox):
     try:
-        status, search_data = inbox.search(None, status.value)
-        
+        status, search_data = inbox.search(None, status.value, filter)
         if status != 'OK':
             return {
                 "error": "Failed to fetch emails",
@@ -34,12 +32,12 @@ def emails(status: EmailStatus, inbox):
             }
 
         return list(map(int, search_data[0].decode('ascii').split()))
-
     except Exception as e:
         print(e)
 
 
 if __name__ == "__main__":
     inbox = get_inbox()
-    all_emails = emails(EmailStatus.ALL, inbox)
-
+    date = datetime.date.today().strftime("%d-%b-%Y")
+    all_emails = emails(EmailStatus.ALL, f'(SENTSINCE {date})', inbox)
+    print(all_emails)

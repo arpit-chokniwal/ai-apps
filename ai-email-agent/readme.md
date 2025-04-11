@@ -7,3 +7,6 @@ make sure that you enable these 2 setting in you gmail account
 - https://myaccount.google.com/apppasswords?pli=1&rapt=AEjHL4NCZhsF4maf8A4XGfpHXpuWqbdYJ3JKxyXPuED2lYwQ41jtah09XVEf8mJqBQyYbGk4c-udKWEx91mNwxmBrv3A5q3vGF_dSkQ8yRkBXNSahCpRDXU
 
 
+Here are some useful link 
+
+- here you can find how to filter email on day level: https://stackoverflow.com/questions/28597779/how-to-filter-gmail-imap-messages-for-date-in-python 
