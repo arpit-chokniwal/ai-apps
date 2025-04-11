@@ -8,5 +8,4 @@ make sure that you enable these 2 setting in you gmail account
 
 
 Here are some useful link 
-
 - here you can find how to filter email on day level: https://stackoverflow.com/questions/28597779/how-to-filter-gmail-imap-messages-for-date-in-python 

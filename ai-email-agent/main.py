@@ -1,6 +1,7 @@
-import imaplib, os, datetime
+import imaplib, os, datetime, email
 from dotenv import load_dotenv
 from enum import Enum
+from utils import findAllEmailsInString
 
 class EmailStatus(Enum):
     SEEN = "SEEN"
@@ -13,10 +14,10 @@ load_dotenv()
 
 def get_inbox():
     try:
-        user, password = os.getenv("user"), os.getenv("password")
-        imap_url = 'imap.gmail.com'
+        user, password, imap_url = os.getenv("user"), os.getenv("password"), os.getenv("imap_url")
         mail = imaplib.IMAP4_SSL(imap_url, 993)
         mail.login(user, password)
+        # here we are selecting inbox, if you have some lable and all add that insted of inbox 
         mail.select('inbox')
         return mail
     except Exception as e:
@@ -30,14 +31,63 @@ def emails(status: EmailStatus, filter: str, inbox):
                 "error": "Failed to fetch emails",
                 "status": status
             }
-
         return list(map(int, search_data[0].decode('ascii').split()))
     except Exception as e:
         print(e)
 
+
+def get_email_body(email_id, inbox):
+    try:
+        data = inbox.fetch(str(email_id).encode('ascii'), '(RFC822)')[1]
+        email_message = email.message_from_bytes(data[0][1])
+        time_row = email.utils.parsedate_to_datetime(email_message['date']).isoformat()
+    except Exception as e:
+        print(f'Invalid position {email_id}: {e}')
+        return f"Position {email_id} not valid"
+
+    email_data = {
+        'date': time_row,
+        'to': [],
+        'cc': [],
+        'from': None,
+        'subject': email_message['subject']
+    }
+
+    for header in ['to', 'cc', 'from']:
+        header_value = email_message[header]
+        if not header_value:
+            continue
+            
+        emails = findAllEmailsInString(header_value)
+        if header == 'from':
+            email_data[header] = emails[0] if emails else None
+        else:
+            email_data[header] = emails
+
+    for part in email_message.walk():
+        content_type = part.get_content_type()
+        try:
+            if content_type == "text/plain":
+                email_data['body'] = part.get_payload(decode=True).decode().replace("\n", " ").replace("\r", "")
+            elif (part.get_content_maintype() != 'multipart' and 
+                  part.get('Content-Disposition') and 
+                  part.get_filename() and 
+                  part.get_filename().lower().endswith(('.pdf', '.txt', '.docx'))):
+                file_data = part.get_payload(decode=True)
+                print(file_data)
+        except Exception as e:
+            print(f"Error processing {content_type} at position {email_id}: {e}")
+
+    return email_data
 
 if __name__ == "__main__":
     inbox = get_inbox()
     date = datetime.date.today().strftime("%d-%b-%Y")
     all_emails = emails(EmailStatus.ALL, f'(SENTSINCE {date})', inbox)
     print(all_emails)
+    for email_id in all_emails:
+        email_body = get_email_body(email_id, inbox)
+        print(email_body, "\n\n")
+
+        
+
