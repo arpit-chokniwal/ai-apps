@@ -14,8 +14,7 @@ To ensure the project works correctly with your Gmail account, please follow the
 If you use 2-step verification on your Google account, you must create an app password:
 
 - Visit [App Passwords](https://myaccount.google.com/apppasswords?pli=1&rapt=AEjHL4NCZhsF4maf8A4XGfpHXpuWqbdYJ3JKxyXPuED2lYwQ41jtah09XVEf8mJqBQyYbGk4c-udKWEx91mNwxmBrv3A5q3vGF_dSkQ8yRkBXNSahCpRDXU)
-- Select **Mail** as the app and **Device** as your platform
-- Use the generated password in place of your normal Gmail password
+- Generate password and use in place of your normal Gmail password
 
 ---
 
