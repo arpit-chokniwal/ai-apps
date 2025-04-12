@@ -131,7 +131,7 @@ def main():
                 tag = call_llm(text)
             email_details['tag'] = tag
             data.append(email_details)
-            print(tag, email_id, "\n\n")
+            print(f"According to the email content, the tag is: {tag} for email id: {email_id}\n\n")
 
         # here is emails data with tags do what ever you want with it : )
         return data
