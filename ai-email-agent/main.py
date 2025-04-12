@@ -115,7 +115,7 @@ def main():
             email_details = get_email_details(email_id, inbox)
             # some times plain text is not available, so we use html body
             text = f"Subject: {email_details['subject']}\n\nBody:\n{email_details['body'] or email_details['html_body']}"
-            tag = None
+            image_urls = None
             if len(email_details['attachments']) > 0:
                 attachment = email_details['attachments']
                 image_urls = []
@@ -126,12 +126,9 @@ def main():
                             "url": f"data:{att['content_type']};base64,{att['base64']}"
                         }
                     })
-                tag = call_llm(text, image_urls)
-            else:
-                tag = call_llm(text)
-            email_details['tag'] = tag
+            email_details['tag'] = call_llm(text, image_urls)
             data.append(email_details)
-            print(f"According to the email content, the tag is: {tag} for email id: {email_id}\n\n")
+            print(f"According to the email content, the tag is: {email_details['tag']} for email id: {email_id}\n\n")
 
         # here is emails data with tags do what ever you want with it : )
         return data
